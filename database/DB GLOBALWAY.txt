@@ -1,0 +1,248 @@
+USE master
+
+GO
+
+CREATE DATABASE GLOBAL_WAY
+GO
+
+USE GLOBAL_WAY
+go
+
+CREATE TABLE Sedes(
+ID_Sedes INT PRIMARY KEY,
+Nombre_Sede VARCHAR(100),
+Comision DECIMAL,
+)
+GO
+
+
+/**/
+create table Monedas(
+ID_Moneda varchar(10) primary key,
+Nombre_Moneda varchar(50) not null,
+Tipo_Cambio decimal not null,
+
+)
+GO
+
+CREATE TABLE Transferencia(
+ID_Transferencia INT identity (1,1) PRIMARY KEY,
+ID_Sedes INT,
+Nombre_Cliente VARCHAR(50),
+Correo VARCHAR (100),
+Moneda_comprar varchar(10), --/Trae una moneda de la tabla Monedas (foreign key)
+FOREIGN KEY (Moneda_comprar) REFERENCES Monedas(ID_Moneda),
+Cantidad DECIMAL,
+Retira VARCHAR (100), 
+Paga_con VARCHAR(10), --Trae una moneda de la tabla Monedas (foreign key)/
+FOREIGN KEY (Paga_con) REFERENCES Monedas(ID_Moneda),
+Monto_pagar DECIMAL,
+FOREIGN KEY (ID_Sedes) REFERENCES Sedes(ID_Sedes)
+)
+GO
+
+select * from Sedes
+go
+
+--/MOSTRAR DATOS/
+
+CREATE PROC MOSTRAR_SEDES
+AS
+SELECT  * FROM Sedes
+GO
+
+
+/**************************PROCEDIMIENTOS ALMACENADOS*******************************/
+
+---------------------------------------PROC INSERTAR SEDE------------------------------------
+CREATE PROC INSERT_SEDE
+(
+@ID INT,
+@NOMBRE_SEDE VARCHAR(100),
+@COMISION DECIMAL
+)
+AS
+BEGIN
+INSERT INTO Sedes(ID_Sedes,Nombre_Sede,Comision)
+VALUES(@ID,@NOMBRE_SEDE,@COMISION);
+END
+
+
+EXEC INSERT_SEDE 6 ,'Honduras',4
+GO
+
+
+
+-----------------------------PROCE INSERTAR TRANS-------------------------------------------
+CREATE PROC INSERT_TRANS
+(
+@SEDES INT,
+@NOM VARCHAR(50),
+@COR VARCHAR(100),
+@MONE VARCHAR(10),
+@CANT DECIMAL,
+@RETI VARCHAR(100),
+@PAGA VARCHAR(10),
+@MONTO DECIMAL
+)
+AS
+BEGIN
+INSERT INTO Transferencia(ID_Sedes,Nombre_Cliente,Correo,Moneda_comprar,Cantidad,Retira,Paga_con,Monto_pagar)
+VALUES(@SEDES,@NOM,@COR,@MONE,@CANT,@RETI,@PAGA,@MONTO);
+END
+
+select Comision from Sedes where ID_Sedes = '3'
+select Tipo_Cambio from Monedas WHERE ID_Moneda = 'COL'
+select Tipo_Cambio from Monedas WHERE ID_Moneda = 'DOL'
+
+/**/
+
+insert into Monedas values ('COL','Colones',610.9)
+insert into Monedas values ('SOL','Sol Peru',3.5)
+insert into Monedas values ('BAL','Balboa',1)
+insert into Monedas values ('QTZ','Quetzal',7.7)
+insert into Monedas values ('MX','Peso Mexico',20.9)
+insert into Monedas values ('LEMP','Lempira',24.5)
+
+select * from Monedas
+select * from Transferencia
+
+EXEC INSERT_TRANS 
+GO
+---------------------------------------DELETE SEDE-----------------------------------------------
+CREATE PROC DELETE_SEDE
+@ID_SEDE INT
+AS
+BEGIN
+DECLARE @MENSAJE VARCHAR(100) = 'No existe'
+IF NOT EXISTS (SELECT ID_Sedes FROM Sedes WHERE ID_Sedes = @ID_SEDE) 
+BEGIN
+SET @MENSAJE = 'No existe '
+SELECT @MENSAJE as MENSAJE
+END
+ELSE
+BEGIN
+DELETE FROM Sedes
+WHERE ID_Sedes=@ID_SEDE
+SET @MENSAJE='Eliminado correctamente'
+SELECT @MENSAJE as Mensaje
+END
+END
+
+
+EXEC DELETE_SEDE 3
+GO
+
+------------------------------------UPDATE SEDE-------------------------------------
+
+GO
+CREATE PROC UPDATE_SEDE
+@ID_SEDE INT,
+@NOMBRE_SEDE VARCHAR(100),
+@COMISION FLOAT
+AS
+BEGIN
+DECLARE @MENSAJE VARCHAR(100) = ' '
+IF NOT EXISTS(SELECT ID_Sedes FROM Sedes WHERE ID_Sedes=@ID_SEDE)
+BEGIN
+SET @MENSAJE = 'No existe'
+SELECT @MENSAJE as MENSAJE
+END
+ELSE
+BEGIN
+UPDATE Sedes
+SET ID_Sedes = @ID_SEDE,Nombre_Sede = @NOMBRE_SEDE, Comision = @COMISION
+WHERE ID_Sedes = @ID_SEDE
+SET @MENSAJE='Registro Actualizado'
+SELECT @MENSAJE as MENSAJE
+END
+END
+
+EXEC UPDATE_SEDE 2,'Peru',5
+GO
+
+--------------------------------proc almacenado buscar-------------------------------
+CREATE PROC BUSCAR(
+    @ID_SEDE int
+)
+AS 
+BEGIN 
+ 
+    SELECT ID_Sedes,Nombre_Sede,Comision
+    FROM   Sedes
+    WHERE  ID_Sedes = @ID_SEDE 
+END
+GO
+
+EXEC BUSCAR 3
+GO
+-----------------------------------INSERTAR   MONEDA----------------------------------------------
+CREATE PROC INSERT_MONEDA
+(
+@ID_MONEDA VARCHAR(10),
+@NOMBRE_MONEDA VARCHAR(50),
+@TIPO_CAMBIO DECIMAL
+)
+AS
+BEGIN
+INSERT INTO Monedas(ID_Moneda,Nombre_Moneda,Tipo_Cambio)
+VALUES(@ID_MONEDA,@NOMBRE_MONEDA,@TIPO_CAMBIO);
+END
+
+EXEC INSERT_MONEDA
+GO
+----------------------------------------UPDATE MONEDA------------------------------------------------
+CREATE PROC UPDATE_MONEDA
+@ID_MONEDA VARCHAR(10),
+@NOMBRE_MONEDA VARCHAR(50),
+@TIPO_CAMBIO DECIMAL
+AS
+BEGIN
+UPDATE Monedas
+SET ID_Moneda = @ID_MONEDA,Nombre_Moneda = @NOMBRE_MONEDA, Tipo_Cambio = @TIPO_CAMBIO
+WHERE ID_Moneda = @ID_MONEDA
+END
+
+EXEC UPDATE_MONEDA
+GO
+------------------------------------------DELETE MONEDA-----------------------------------------------------------
+CREATE PROC DELETE_MONEDA
+@ID_MONEDA VARCHAR(10)
+AS
+BEGIN
+DELETE FROM Monedas
+WHERE ID_Moneda=@ID_MONEDA
+END
+
+EXEC DELETE_MONEDA 
+GO
+
+alter PROC MOSTRAR_MONEDA
+@NOMBRE_Filtro VARCHAR(15)='',
+@Opcion VARCHAR(50)=''
+AS
+if(@Opcion = 'Select Moneda')
+begin
+	SELECT Tipo_Cambio FROM Monedas WHERE Nombre_Moneda=@NOMBRE_Filtro 
+end
+else if(@Opcion = 'Select Retiras')
+begin 
+	SELECT Comision FROM Sedes WHERE Nombre_Sede=@NOMBRE_Filtro
+end
+GO
+
+EXEC MOSTRAR_MONEDA 'Colones'
+GO
+
+--SELECT ID_Sedes, Nombre_Sede, Comision FROM Sedes union SELECT ID_Moneda, Nombre_Moneda, Tipo_Cambio FROM Monedas 
+
+CREATE PROC DELETE_TRANSFERENCIA
+@ID_TRANSFERENCIA INT
+AS
+BEGIN
+DELETE FROM Transferencia
+WHERE ID_Transferencia=@ID_TRANSFERENCIA
+END
+
+EXEC DELETE_TRANSFERENCIA 22
+GO
